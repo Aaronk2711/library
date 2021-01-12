@@ -2,6 +2,8 @@ package application;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import javax.servlet.RequestDispatcher;
@@ -18,7 +20,7 @@ public class Controller extends HttpServlet {
 	
 	private BookDAO dao;
 	
-	public void init() {
+	public void init( ) {
 		final String url = getServletContext().getInitParameter("JDBC-URL");
 		final String username = getServletContext().getInitParameter("JDBC-USERNAME");
 		final String password = getServletContext().getInitParameter("JDBC-PASSWORD");
@@ -37,23 +39,26 @@ public class Controller extends HttpServlet {
 		
 		try {
 			switch (action) {
-				case "/add": //intentially fall through
-				case "/edit": showEditForm(request, response); break;
-				case "/insert": insertBook(request, response); break;
-				case "/update": updateBook(request, response); break;
-				default: viewBooks(request, response); break;
+			case "/add": //intentionally fall through
+			case "/edit": showEditForm(request, response); break;
+			case "/insert": insertBook(request, response); break;
+			case "/update": updateBook(request, response); break;
+			default: viewBooks(request, response); break;
 			}
 		} catch (SQLException e) {
 			throw new ServletException(e);
 		}
 	}
-	
+
 	private void viewBooks(HttpServletRequest request, HttpServletResponse response) throws SQLException, ServletException, IOException {
+		final String action = request.getParameter("action") != null
+				? request.getParameter("action")
+				: "null";
 		List<Book> books = dao.getBooks();
 		request.setAttribute("books", books);
 		
 		RequestDispatcher dispatcher = request.getRequestDispatcher("inventory.jsp");
-		dispatcher.forward(request,  response);
+		dispatcher.forward(request, response);
 	}
 	
 	private void insertBook(HttpServletRequest request, HttpServletResponse response) throws SQLException, ServletException, IOException {
@@ -67,8 +72,8 @@ public class Controller extends HttpServlet {
 	
 	private void updateBook(HttpServletRequest request, HttpServletResponse response) throws SQLException, ServletException, IOException {
 		final String action = request.getParameter("action") != null
-				? request.getParameter("action")
-				: request.getParameter("submit").toLowerCase();
+			? request.getParameter("action")
+			: request.getParameter("submit").toLowerCase();
 		final int id = Integer.parseInt(request.getParameter("id"));
 		
 		Book book = dao.getBook(id);
@@ -76,7 +81,7 @@ public class Controller extends HttpServlet {
 			case "rent": book.rentMe(); break;
 			case "return": book.returnMe(); break;
 			case "save":
-				String title = request.getParameter("title");
+				String title =request.getParameter("title");
 				String author = request.getParameter("author");
 				int copies = Integer.parseInt(request.getParameter("copies"));
 				int available = book.getAvailable() + (copies - book.getCopies());
@@ -88,8 +93,8 @@ public class Controller extends HttpServlet {
 				break;
 			case "delete": deleteBook(id, request, response); return;
 		}
-		
 		dao.updateBook(book);
+		
 		response.sendRedirect(request.getContextPath() + "/");
 	}
 	
@@ -100,16 +105,16 @@ public class Controller extends HttpServlet {
 			Book book = dao.getBook(id);
 			request.setAttribute("book", book);
 		} catch (NumberFormatException e) {
-			//this is expected for empty forms (i.e., without a valid id)
+			
 		} finally {
 			RequestDispatcher dispatcher = request.getRequestDispatcher("bookform.jsp");
-			dispatcher.forward(request,  response);
+			dispatcher.forward(request, response);
 		}
 	}
 	
 	private void deleteBook(final int id, HttpServletRequest request, HttpServletResponse response) throws SQLException, ServletException, IOException {
 		dao.deleteBook(dao.getBook(id));
+		
 		response.sendRedirect(request.getContextPath() + "/");
 	}
-
 }
